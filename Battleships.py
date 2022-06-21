@@ -34,8 +34,11 @@ pass
 
 class CreateShip:
     def __init__(self,type):
+        self.ship_number = 1
         self.type = type.lower()
         self.occupied_squares = 0
+        self.position = []
+        self.destroyed = False
         if self.type == "battleship":
             self.occupied_squares = 3
         elif self.type == "cruiser":
@@ -45,9 +48,10 @@ class CreateShip:
         else:
             self.occupied_squares = 1
         self.orientation = random.randint(0,1) # initial ship orientation. 0 is horizontal, 1 is vertical
+        self.ship_number += 1
 
-# a = CreateShip("cruisEr")
-# print(a.occupied_squares,a.type,a.orientation,a)
+a = CreateShip("cruisEr")
+print(a.occupied_squares,a.type,a.orientation,a)
 
 def create_alphabet():
     #simple function to create an alphabetical list for the grid
@@ -140,19 +144,9 @@ def deploy_the_fleets():
                     ship_locations.append(rand_row+str(rand_col+positions))
                 elif orientation == 1:
                     temp = alphabet[positions]
-                    print(temp)
-                    ship_locations.append(alphabet[alphabet.index(rand_row)+positions]+str(rand_col))
+                    # print(temp)
+                    # # ship_locations.append(alphabet[alphabet.index(rand_row)+positions]+str(rand_col))
 
-
-
-            
-
-
-
-    
-
-    
-    pass
 
 
 def check_for_ships_hit():
@@ -162,7 +156,8 @@ create_alphabet()
 board_size = start_of_game()
 building_the_grid(board_size)
 print_the_grid()
-deploy_the_fleets()
+# deploy_the_fleets()
+print()
 user_guess()
 
 
