@@ -6,35 +6,44 @@ Tim Williams Project 3
 
 
 from string import ascii_lowercase
-from venv import create
-import PySimpleGUI as sg
+# from venv import create
 import random
 
-from attr import s
 
 
 alphabet = []
+ships=[]
+## squares allocated for different board sizes
+small = 8
+medium = 9
+large = 10
 board_size = ""
 grid = [[]]
 number_of_ships = 0
-shots_fired = 40
-ship_locations =[]
+shots_fired = ["a5","f6","c1"]
+ship_locations = [["g1","g2","g3"],["a7","b7","c7"]]
+ammo = 40
+
+
+## Main Game Function
 
 def main_game():
     create_alphabet()
     start_of_game()
     building_the_grid()
-    deploy_the_fleets()
+    deploy_the_fleet()
 
     while number_of_ships >0:
         user_guess()
         check_for_ships_hit()
-        computer_selection()
+        computer_guess()
 pass
 
+
+## Create Ship Objects
 class CreateShip:
+    ship_number = 1
     def __init__(self,type):
-        self.ship_number = 1
         self.type = type.lower()
         self.occupied_squares = 0
         self.position = []
@@ -48,10 +57,14 @@ class CreateShip:
         else:
             self.occupied_squares = 1
         self.orientation = random.randint(0,1) # initial ship orientation. 0 is horizontal, 1 is vertical
-        self.ship_number += 1
+        self.position = position_ship(self.occupied_squares)
+        self.ship_number = CreateShip.ship_number
+        CreateShip.ship_number+=1
 
-a = CreateShip("cruisEr")
-print(a.occupied_squares,a.type,a.orientation,a)
+
+
+
+## Making the alphabet row headings
 
 def create_alphabet():
     #simple function to create an alphabetical list for the grid
@@ -62,24 +75,25 @@ def create_alphabet():
 
 def start_of_game():
      #establishes board size from user input
-    global board_size
-    global number_of_ships
-    global alphabet
+    global board_size, number_of_ships, alphabet, small, medium, large
+
     print("Welcome to Python Battleships")
     while (board_size != "s" and board_size !="m" and board_size != "l"):
         board_size = input("Would you like to play on a small, medium or large board? (s/m/l)")
         board_size = board_size.lower()
     if board_size == "s":
-        board_size = 8
+        board_size = small
         number_of_ships = 4
     elif board_size == "m":
-        board_size = 9
+        board_size = medium
         number_of_ships = 5
     else:
-        board_size = 10
+        board_size = large
         number_of_ships = 6
     alphabet = alphabet[0:board_size]
-    return board_size
+    return board_size, number_of_ships
+
+## Establish the grid
 
 def building_the_grid(board_size): 
     #builds the game grid from user input of board size
@@ -88,7 +102,7 @@ def building_the_grid(board_size):
     
     # for i in range (board_size):
     #     rows.insert(i)
-    for iter in range(1,board_size+1):
+    for x in range(1,board_size+1):
         columns = []
         # rows.append(iter)
         for second_iter in range(1,board_size+1):
@@ -101,9 +115,14 @@ def building_the_grid(board_size):
         grid[i][0] = alphabet[i-1]
     grid[0][0]=" "
 
+## print the grid to be refreshed after each turn so separate from establishing the grid.
+
 def print_the_grid():
     for rows in range(board_size):
         print (grid[rows])
+
+
+## The user's guess
 
 def user_guess():
     #user firing solution error capture based on the addressable elements in the string
@@ -128,75 +147,148 @@ def user_guess():
         print("You have already fired at that spot")
     
 
+## Creating ships
 
-def deploy_the_fleets():
-    #funtion to randomly distribute the fleets
-    global ship_locations
-    ship_lengths = [4,3,2,2] # the number of lengths of different types of ship
-    for ships in ship_lengths:
-        ship_position_occupied = False
-        while ship_position_occupied ==False:
-            rand_row = random.choice(alphabet)
-            rand_col = random.randint(1,board_size+1)
-            orientation = random.randint(0,1) # initial ship orientation. 0 is horizontal, 1 is vertical
-            for positions in range(ships):
-                if orientation == 0:
-                    ship_locations.append(rand_row+str(rand_col+positions))
-                elif orientation == 1:
-                    temp = alphabet[positions]
-                    # print(temp)
-                    # # ship_locations.append(alphabet[alphabet.index(rand_row)+positions]+str(rand_col))
+def deploy_the_fleet():
+    #function to randomly distribute the fleets
+    global ship_locations, ships, number_of_ships, small, medium,large
+    if board_size == small:
+        board_ships = ["Battleship","Cruiser","Destroyer"]
+        for boat in range(len(board_ships)):
+            new_boat = CreateShip(f"{board_ships[boat]}")
+            ships.append(new_boat)
+            print(ships[boat].type)
+            print(ships[boat].position)
+    elif board_size == medium:
+        board_ships = ["Battleship","Cruiser","Destroyer","Destroyer"]
+        for boat in range(len(board_ships)):
+            new_boat = CreateShip(f"{board_ships[boat]}")
+            ships.append(new_boat)
+            print(ships[boat].type)
+    else:
+        board_ships = ["Battleship","Cruiser","Cruiser","Destroyer","Destroyer"]
+        for boat in range(len(board_ships)):
+            new_boat = CreateShip(f"{board_ships[boat]}")
+            ships.append(new_boat)
+            print(ships[boat].type)
+
+
+## called from within the ship constructor function to establish the ships grid position
+
+def position_ship(squares_occupied):
+    new_ship_position = []
+    ship_position_occupied = False
+    while ship_position_occupied == False:
+        rand_row = random.choice(alphabet)
+        rand_col = random.randint(1,board_size-1)
+        orientation = random.randint(0,1) # initial ship orientation. 0 is horizontal, 1 is vertical
+        if orientation == 0 and rand_col+squares_occupied<board_size:
+            for squares in range(squares_occupied):
+                    new_ship_position.append(rand_row+str(rand_col+squares))          
+            if check_ship_overlap(new_ship_position):
+                ship_position_occupied = True
+            else:
+                new_ship_position.clear()
+        elif orientation == 1 and alphabet.index(rand_row)+squares_occupied<board_size:
+            for squares in range(squares_occupied):
+                new_ship_position.append(alphabet[squares]+str(rand_col))
+            if check_ship_overlap(new_ship_position):
+                ship_position_occupied = True
+            else:
+                new_ship_position.clear()
+    return new_ship_position
 
 
 
-def check_for_ships_hit():
+    return ship_position
+
+## checks to see if one new ship overlaps with the previous ships' positions
+
+def check_ship_overlap(check):
+    global ships
+    for x in ships:
+        for y in check:
+            if y in x.position:
+                return False               
+    return True
+
+
+def check_for_ships_hit(shot):
+    for x in ships:
+        if shot in ships.position:
+            print("HIT")
+            
+
     pass
 
+
+
+def computer_guess():
+    initial_random_guess()
+    exploration_shots()
+
+
+def initial_random_guess():
+    global shots_fired
+    new_shot = False
+    while new_shot==False:
+        for i in shots_fired:
+            col_guess = alphabet[random.randint(1,board_size-1)]
+            row_guess = str(random.randint(1,board_size-1))
+            guess = col_guess+row_guess
+            if guess != i:
+                print("already made that shot")
+                new_shot = False
+            else:
+                new_shot = True
+                print("new shot")
+                print(guess)
+                shots_fired.append(guess)
+    return guess
+
+    print (guess)
+    for i in ship_locations:
+        for index in i:
+            if guess  == index:
+                print("HIT", guess)
+            else:
+                print("miss")
+
+
+            
+
+    print(col_guess,row_guess)
+
+
+
+
+## game sequence
+
 create_alphabet()
-board_size = start_of_game()
+board_size,number_of_ships = start_of_game()
 building_the_grid(board_size)
 print_the_grid()
-# deploy_the_fleets()
-print()
-user_guess()
+deploy_the_fleet()
+print([x.position for x in ships])
+# user_guess()
+# initial_random_guess()
 
 
+## Check if a ship has been hit
 
-# main_game()s
-
-
-
-
-# sg.theme('DarkGray')
-
-
-
-
-# layout = [  [sg.Text('Choose the board size')],
-#             [sg.Text('Enter (s)mall, (m)edium or (l)arge'), sg.InputText()],
-#             [sg.OK(), sg.Cancel()]]
-
-# # Create the Window
-# window = sg.Window('Welcome to Battleships', layout)
-# # Event Loop to process "events"
-# while True:             
-#     event, values = window.read()
-#     if event in (sg.WIN_CLOSED, 'Cancel'):
-#         break
-#     else:
-#         board_size = event
-#         while (board_size != "s" and board_size !="m" and board_size != "l"):
-#             board_size = board_size.lower()
-#         if board_size == "s":
-#             board_size = 10
-#         elif board_size == "m":
-#             board_size = 15
-#         else:
-#             board_size = 20
+def cycle_through_ships(shot):
+        for i in range(len(ships)):
+            for x in ships[i].position:
+                if shot == x:
+                    for iter in range(len(shots_fired)):
+                        if shot == iter:
+                            return("Already tried there")
+                    return("Hit!")
+                else:
+                    return("Miss!")
 
 
-# window.close()
-
+## 
 
 
 
