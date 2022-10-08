@@ -11,4 +11,7 @@ The second major algorithm to consider is the placement of ships. Each fleet is 
 
 For the random assignments, the math module is imported.
 
+had to add leading zero to grid to format properly created problems for checking ship locations.
+
+
 
