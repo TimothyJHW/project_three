@@ -22,8 +22,9 @@ grid_index =[" "]
 grid = [[]]
 number_of_ships = 0
 shots_fired = ["a5","f6","c1"]
-ship_locations = [["g1","g2","g3"],["a7","b7","c7"]]
-ammo = 40
+missed_shots= []
+player_ammo = 40
+computer_ammo = 40
 
 
 # Main Game Function
@@ -58,8 +59,8 @@ class CreateShip:
             self.occupied_squares = 2
         else:
             self.occupied_squares = 1
-        self.orientation = random.randint(0,1) # initial ship orientation. 0 is horizontal, 1 is vertical
         self.position = position_ship(self.occupied_squares)
+        self.hits = []
         self.ship_number = CreateShip.ship_number
         CreateShip.ship_number+=1
 
@@ -108,16 +109,15 @@ def building_the_grid(board_size):
     for i in range(0,board_size):
         if i<10 and i>0:
             grid_index.append("0" + str(i))
-            # grid[0][i] = "0" + str(i)
         elif i>=10:
             grid_index.append(str(i))
-            # grid[0][i] = str(i)
         grid[i][0] = alphabet[i]
 
 
 # print the grid to be refreshed after each turn so separate from establishing the grid.
 
 def print_the_grid():
+    print(f"shots_remaining = {player_ammo}")
     print(grid_index)
     for rows in range(board_size):
         print (grid[rows])
@@ -126,31 +126,49 @@ def print_the_grid():
 # The user's guess
 
 def user_guess():
+    global player_ammo
     #user firing solution error capture based on the addressable elements in the string
     accept=False
     while accept == False:
-        fire_guess = input("Choose your next shot by inputting grid ref (letter followed by 2 digit number")
-        if fire_guess[0].isalpha() and fire_guess[0].lower() in alphabet and len(fire_guess) >= 2: #is the 1st char of the input within range and a letter
+        fire_guess = input("Choose your next shot by inputting grid ref (letter followed by 2 digit number: ")
+        if len(fire_guess) >= 2 and fire_guess[0].isalpha() and fire_guess[0].lower() in alphabet: #is the 1st char of the input within range and a letter
             if fire_guess[1:].isnumeric() and int(fire_guess[1:])>=0 and int(fire_guess[1:])<= board_size: # is the 2nd char of input within range and a number
                 accept = True
             else:
                 print("Please enter valid refs")
     #search the grid to see if there has been a hit first split user response up into column and row
-    col = int(alphabet.index(fire_guess[:1])) # +1 to compensate for the 0,0 empty cell.
+    col = int(alphabet.index(fire_guess[:1]))
     row = int(fire_guess[1:])
 
-# need to be changed
+    for i in ships:
+        if fire_guess in i.position and i.player == "computer":
+            grid[col][row] = "HH"
+            print_the_grid()
+            player_ammo -=1
+            i.hits.append(fire_guess)
+            i.hits = sorted(i.hits)
+            return("HIT")
+        elif fire_guess in i.position and i.player == "user":
+            return("INVALID")
+    grid[col][row] ="##"
+    player_ammo -=1
+    print_the_grid()
+    return("MISS") 
 
-    if grid[col][row] == "--":
-        print("You missed")
-        grid[col][row]="##"
-        print_the_grid()
-    elif grid[col][row] == "1":
-        print ("A hit, a palpable hit!")
-        grid[col][row] ="x"
-    elif grid[col][row] == "##" or grid[col][row] == "x":
-        print("You have already fired at that spot")
-    
+    def check_shot(col,row):
+        global grid
+        for i in ships:
+            if fire_guess in i.position and i.player == "computer":
+                grid[col][row] = "HH"
+                print_the_grid()
+                player_ammo -=1
+                return("HIT")
+            elif fire_guess in i.position and i.player == "user":
+                return("INVALID")
+    grid[col][row] ="##"
+    player_ammo -=1
+    print_the_grid()
+    return("MISS") 
 
 ## Creating ships
 
@@ -170,9 +188,6 @@ def deploy_the_fleet():
                         col = int(alphabet.index(x[:1]))
                         row = int(x[1:])
                         grid[col][row] = str(board_ships[boat][:1]+board_ships[boat][:1])
-                        print(grid[col][row])
-                        # [new_boat.position for x in new_boat.position]
-                print(f"this is a test{new_boat.position}")
         elif board_size == medium:
             board_ships = ["Battleship","Cruiser","Destroyer","Destroyer"]
             for boat in range(len(board_ships)):
@@ -183,7 +198,6 @@ def deploy_the_fleet():
                         col = int(alphabet.index(x[:1]))
                         row = int(x[1:])
                         grid[col][row] = str(board_ships[boat][:1]+board_ships[boat][:1])
-                        print(grid[col][row])
         else:
             board_ships = ["Battleship","Cruiser","Cruiser","Destroyer","Destroyer"]
             for boat in range(len(board_ships)):
@@ -194,7 +208,6 @@ def deploy_the_fleet():
                         col = int(alphabet.index(x[:1]))
                         row = int(x[1:])
                         grid[col][row] = str(board_ships[boat][:1]+board_ships[boat][:1])
-                        print(grid[col][row])
         player = "computer"
 
 
@@ -223,11 +236,11 @@ def position_ship(squares_occupied):
                 new_ship_position.clear()
     return new_ship_position
 
-# small function to convert grid references from the "0x" to "x" for calculation purposes.
+# # small function to convert grid references from the "0x" to "x" for calculation purposes.
 
-def convert(x):
-    result = x[:1] + str(int(x[2:]))
-    return result
+# def convert(x):
+#     result = x[:1] + str(int(x[2:]))
+#     return result
 
     return ship_position
 
@@ -255,7 +268,7 @@ def own_goal(shot,player):
 def check_for_ships_hit(shot,player):
     for x in ships:
         if shot in x.position:
-            print(f"You hit my {x.type}!")
+            return("Hit")
 
 
     pass
@@ -271,11 +284,19 @@ def computer_guess():
 
 def initial_random_guess():
     new_shot = False
-    while new_shot==False:
-        for i in shots_fired:
-            col_guess = alphabet[random.randint(1,board_size-1)]
-            row_guess = str(random.randint(1,board_size-1))
-            guess = col_guess+row_guess
+    # while new_shot==False:
+    # for i in shots_fired:
+    col_guess = alphabet[random.randint(1,board_size-1)]
+    row_guess = str(random.randint(1,board_size-1))
+    # new_shot == True
+    guess = col_guess+row_guess
+    for i in ships:
+        if guess in i.position and i.player =="user":
+            print(guess,i.position,i.type)
+        else:
+            print(guess,i.type,"No way jose")
+
+            
             # if guess != i:
             #     print("already made that shot")
             #     new_shot = False
@@ -284,20 +305,19 @@ def initial_random_guess():
             #     print("new shot")
             #     print(guess)
             #     shots_fired.append(guess)
-    return guess
 
-    print (guess)
-    for i in ship_locations:
-        for index in i:
-            if guess  == index:
-                print("HIT", guess)
-            else:
-                print("miss")
+
+    # print (guess)
+    # for i in ship_locations:
+    #     for index in i:
+    #         if guess  == index:
+    #             print("HIT", guess)
+    #         else:
+    #             print("miss")
 
 
             
 
-    print(col_guess,row_guess)
 
 
 
@@ -311,7 +331,8 @@ deploy_the_fleet()
 print_the_grid()
 print([x.position for x in ships])
 print(alphabet)
-user_guess()
+print(user_guess())
+print(computer_guess())
 
 # computer_guess()
 # initial_random_guess()
